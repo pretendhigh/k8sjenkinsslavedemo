@@ -13,4 +13,4 @@ COPY target/javawebdemo-1.0-SNAPSHOT.jar  /app/javawebdemo.jar
 
 EXPOSE <APP_PORT>
 
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "--server.port=<APP_PORT>", "javawebdemo.jar"]
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "javawebdemo.jar", "--server.port=<APP_PORT>"]
