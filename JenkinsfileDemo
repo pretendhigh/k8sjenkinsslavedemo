@@ -1,5 +1,5 @@
-node("mapleaves") {
-  def APP_NAME = "javaWebDemo"
+node("jenkins-mvn-slave") {
+  def APP_NAME = "recommend-system"
   def APP_PORT = "8081"
   def NODE_PORT_DEV = "30040"
   def NODE_PORT_PRO = "32040"
@@ -9,8 +9,9 @@ node("mapleaves") {
   def gitCommit = myRepo.GIT_COMMIT
   def gitBranch = myRepo.GIT_BRANCH
   def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-  def imageEndpoint = "mapleaves/javawebdemo-${gitBranch}"
-  def IMAGE = "${imageEndpoint}:${imageTag}"  
+  def dockerRegistryUrl = "10.1.1.177"
+  def imageEndpoint = "mapleaves/recommend-system-${gitBranch}"
+  def IMAGE = "${dockerRegistryUrl}/${imageEndpoint}:${imageTag}"  
   if (gitBranch != 'dev' && gitBranch != 'master'){
     echo "${gitBranch} 分支不参与执行，开始退出，如有疑问，请联系运维人员 ${cicd_admin}"
     return     
@@ -19,8 +20,20 @@ node("mapleaves") {
     echo "============================== 1.代码检测阶段 =============================="
     echo "branch name is ${gitBranch}"
     if (gitBranch == 'dev' ){
+      withCredentials([string(credentialsId: 'sonar-token-resources-sign-on', variable: 'sonarToken')]){
         echo "branch name is ${gitBranch}"
-        // 此处可以调用 sonarqube，这里不展开，可以参考 jenkinsfile-demo
+        sh "mvn sonar:sonar \
+          -Dsonar.projectKey=${APP_NAME} \
+          -Dsonar.projectName=${APP_NAME} \
+          -Dsonar.projectVersion=${imageTag} \
+          -Dsonar.sourceEncoding=UTF-8 \
+          -Dsonar.exclusion=src/test \
+          -Dsonar.language=java \
+          -Dsonar.host.url=http://10.2.7.16 \
+          -Dsonar.login=${sonarToken} \
+          -Dsonar.java.binaries=target/sonar"
+        sh "ls target"
+      }      
     } else {
       echo "${gitBranch} 分支不做代码检测，如有疑问，请联系运维人员 ${cicd_admin}"
     }
@@ -41,13 +54,12 @@ node("mapleaves") {
   stage('构建 Docker 镜像') {
     echo "============================== 3.构建 Docker 镜像阶段  =============================="
     withCredentials([[$class: 'UsernamePasswordMultiBinding',
-      credentialsId: 'mydockerhub',
-      usernameVariable: 'dockerHubUser',
-      passwordVariable: 'dockerHubPassword']]) {         
-      // 此处可以使用 harbor，这里不展开，可以参考 jenkinsfile-demo
+      credentialsId: 'infra-harbor',
+      usernameVariable: 'harborUser',
+      passwordVariable: 'harborPassword']]) {         
       sh """
       sed -i 's/<APP_PORT>/${APP_PORT}/g' Dockerfile
-      docker login -u ${dockerHubUser} -p ${dockerHubPassword}
+      docker login ${dockerRegistryUrl} -u ${harborUser} -p ${harborPassword}
       docker build -t ${IMAGE} .
       docker push ${IMAGE}
       """        
