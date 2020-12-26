@@ -1,5 +1,5 @@
 node("mapleaves") {
-  def APP_NAME = "javaWebDemo"
+  def APP_NAME = "javawebdemo"
   def APP_PORT = "8081"
   def NODE_PORT_DEV = "30040"
   def NODE_PORT_PRO = "32040"
