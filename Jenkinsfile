@@ -1,4 +1,4 @@
-node("jenkins-mvn-slave") {
+node("mapleaves") {
   def APP_NAME = "javaWebDemo"
   def APP_PORT = "8081"
   def NODE_PORT_DEV = "30040"
@@ -21,7 +21,6 @@ node("jenkins-mvn-slave") {
     if (gitBranch == 'dev' ){
         echo "branch name is ${gitBranch}"
         // 此处可以调用 sonarqube，这里不展开，可以参考 jenkinsfile-demo
-      }      
     } else {
       echo "${gitBranch} 分支不做代码检测，如有疑问，请联系运维人员 ${cicd_admin}"
     }
