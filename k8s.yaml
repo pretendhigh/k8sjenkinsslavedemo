@@ -1,0 +1,58 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: <APP_NAME>
+  namespace: <NAMESPACE>
+  labels:
+    app: <APP_NAME> 
+spec:
+  replicas: <REPLICAS>
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: <APP_NAME>
+    spec:
+      restartPolicy: Always
+      hostAliases:
+      - ip: "10.2.7.1"
+        hostnames:
+        - "kafka01"
+      - ip: "10.2.7.9"
+        hostnames:
+        - "kafka02"
+      containers:
+      - image: <IMAGE>
+        name: <APP_NAME>
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: <APP_PORT>
+          name: api
+        resources:
+          limits:
+            cpu: 800m
+            memory: 1200Mi
+          requests:
+            cpu: 50m
+            memory: 600Mi          
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: <APP_NAME>
+  namespace: <NAMESPACE>
+spec:
+  selector:
+    app: <APP_NAME>
+  type:  NodePort
+  ports:
+  - name: api-port
+    port: 8080
+    targetPort:  api
+    nodePort: <NODE_PORT>
