@@ -64,7 +64,7 @@ node("mapleaves") {
       NAMESPACE = "dev"
       NODE_PORT = "${NODE_PORT_DEV}"
     }    
-    withKubeConfig([credentialsId: 'infra-k8s',contextName: 'kubernetes',]) {    
+    withKubeConfig([credentialsId: 'k8s',contextName: 'kubernetes-admin@kubernetes',]) {    
       sh """
         sed -i 's/<APP_NAME>/${APP_NAME}/g' k8s.yaml
         sed -i 's/<APP_PORT>/${APP_PORT}/g' k8s.yaml
