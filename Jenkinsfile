@@ -22,7 +22,7 @@ podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: 
     def gitBranch = myRepo.GIT_BRANCH
     def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
     def imageEndpoint = "mapleaves/k8sjnekinsslave-${gitBranch}"
-    def image = "${imageEndpoint}:${imageTag}"
+    def IMAGE = "${imageEndpoint}:${imageTag}" 
     if (gitBranch != 'dev' && gitBranch != 'master'){
       echo "${gitBranch} 分支不参与执行，开始退出，如有疑问，请联系运维人员$cicd_admin"
       return     
@@ -47,13 +47,19 @@ podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: 
     }
     stage('构建 Docker 镜像') {
       echo "============================== 3.构建 Docker 镜像阶段  =============================="
-      withCredentials([[$class: 'UsernamePasswordMultiBinding',credentialsId: 'mydockerhub',usernameVariable: 'dockerHubUser',passwordVariable: 'dockerHubPassword']]) { 
-        container('docker') {   
-          sh "sed -i 's/<APP_PORT>/${APP_PORT}/g' Dockerfile"
-          sh "docker login -u ${dockerHubUser} -p ${dockerHubPassword}"
-          sh "docker build -t ${IMAGE} ."
-          sh "docker push ${IMAGE}"
-        }               
+
+      withCredentials([[$class: 'UsernamePasswordMultiBinding',
+        credentialsId: 'mydockerhub',
+        usernameVariable: 'dockerHubUser',
+        passwordVariable: 'dockerHubPassword']]) { 
+          container('docker') {   
+            sh """
+            sed -i 's/<APP_PORT>/${APP_PORT}/g' Dockerfile
+            docker login -u ${dockerHubUser} -p ${dockerHubPassword}
+            docker build -t ${IMAGE} .
+            docker push ${IMAGE}
+            """ 
+          } 
       }
     }
     stage('部署 $APP_NAME  到 k8s') {
