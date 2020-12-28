@@ -24,7 +24,7 @@ podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: 
     def imageEndpoint = "mapleaves/k8sjnekinsslave-${gitBranch}"
     def image = "${imageEndpoint}:${imageTag}"
     if (gitBranch != 'dev' && gitBranch != 'master'){
-      echo "${gitBranch} 分支不参与执行，开始退出，如有疑问，请联系运维人员"
+      echo "${gitBranch} 分支不参与执行，开始退出，如有疑问，请联系运维人员$cicd_admin"
       return     
     }    
     stage('单元测试') {
