@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.mapleaves.HelloControllerTest
--------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.301 sec - in com.mapleaves.HelloControllerTest
