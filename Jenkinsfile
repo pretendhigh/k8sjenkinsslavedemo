@@ -49,12 +49,10 @@ podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: 
       echo "============================== 3.构建 Docker 镜像阶段  =============================="
       withCredentials([[$class: 'UsernamePasswordMultiBinding',credentialsId: 'mydockerhub',usernameVariable: 'dockerHubUser',passwordVariable: 'dockerHubPassword']]) { 
         container('docker') {   
-          sh """
-          sed -i 's/<APP_PORT>/${APP_PORT}/g' Dockerfile
-          docker login -u ${dockerHubUser} -p ${dockerHubPassword}
-          docker build -t ${IMAGE} .
-          docker push ${IMAGE}
-          """ 
+          sh "sed -i 's/<APP_PORT>/${APP_PORT}/g' Dockerfile"
+          sh "docker login -u ${dockerHubUser} -p ${dockerHubPassword}"
+          sh "docker build -t ${IMAGE} ."
+          sh "docker push ${IMAGE}"
         }               
       }
     }
