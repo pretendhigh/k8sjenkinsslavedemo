@@ -52,7 +52,6 @@ podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: 
         usernameVariable: 'dockerHubUser',
         passwordVariable: 'dockerHubPassword']]) { 
           container('docker') {   
-            // 此处可以使用 harbor，这里不展开，可以参考 JenkinsfileDemo      
             sh """
             sed -i 's/<APP_PORT>/${APP_PORT}/g' Dockerfile
             docker login -u ${dockerHubUser} -p ${dockerHubPassword}
