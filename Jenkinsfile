@@ -22,7 +22,7 @@ podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: 
     def gitBranch = myRepo.GIT_BRANCH
     def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
     def imageEndpoint = "mapleaves/k8sjnekinsslave-${gitBranch}"
-    def image = "$${imageEndpoint}:${imageTag}"
+    def image = "${imageEndpoint}:${imageTag}"
     if (gitBranch != 'dev' && gitBranch != 'master'){
       echo "${gitBranch} 分支不参与执行，开始退出，如有疑问，请联系运维人员"
       return     
