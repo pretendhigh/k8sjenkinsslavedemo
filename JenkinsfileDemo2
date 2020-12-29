@@ -1,0 +1,77 @@
+def label = "slave-${UUID.randomUUID().toString()}"
+
+podTemplate(label: label, cloud: 'k8s', serviceAccount: 'jenkins2', containers: [
+  containerTemplate(name: 'node', image: 'node:13.6', command: 'cat', ttyEnabled: true),
+  containerTemplate(name: 'docker', image: 'docker', command: 'cat', ttyEnabled: true),
+  containerTemplate(name: 'kubectl', image: 'cnych/kubectl', command: 'cat', ttyEnabled: true),
+  containerTemplate(name: 'jnlp', image: 'cnych/jenkins:jnlp6',ttyEnabled: true)
+], volumes: [
+  hostPathVolume(mountPath: '/home/jenkins/.kube', hostPath: '/root/.kube'),
+  hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock')
+]) {
+  node(label) {
+    def myRepo = checkout scm
+    def gitCommit = myRepo.GIT_COMMIT
+    def gitBranch = myRepo.GIT_BRANCH
+    def imageTag = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+    def dockerRegistryUrl = "192.168.1.17"
+    def imageEndpoint = "infra/vueapp-${gitBranch}"
+    def image = "${dockerRegistryUrl}/${imageEndpoint}"
+    if (gitBranch != 'dev' && gitBranch != 'master'){
+      echo "${gitBranch} 分支不参与执行，开始退出，如有疑问，请联系运维人员"
+      return     
+    }    
+    stage('单元测试') {
+      echo "============================== 1.测试阶段 =============================="
+    }
+    stage('构建 vue 项目') {
+	  echo "============================== 2.构建 vue 项目 =============================="
+      try {
+        container('node') {
+          sh """
+            npm config set registry  https://registry.npm.taobao.org
+            pwd
+            ls
+            npm install
+            npm run build
+             """
+        }
+      } catch (exc) {
+        println "构建失败 - ${currentBuild.fullDisplayName}"
+        throw(exc)
+      }
+    }
+
+stage('构建 Docker 镜像') {
+	  echo "============================== 3.构建 Docker 镜像 =============================="
+      withCredentials([[$class: 'UsernamePasswordMultiBinding',
+        credentialsId: 'infra',
+        usernameVariable: 'harborUser',
+        passwordVariable: 'harborPassword']]) {
+          container('docker') {
+            sh """
+              docker login ${dockerRegistryUrl} -u ${harborUser} -p ${harborPassword}
+              docker build -t ${image}:${imageTag} .
+              docker push ${image}:${imageTag}
+              """
+          }
+      }
+    }
+    stage('部署 vueapp 到 k8s') {
+      echo "============================== 4.部署 vueapp ${gitBranch} 分支到 k8s =============================="
+      if (gitBranch == 'master') {
+        echo "${gitBranch}"
+        k8s_file = "k8s-pro.yaml"
+        input "确认要部署到生产环境吗？"
+      }
+      if (gitBranch == 'dev') {
+        echo "${gitBranch}"
+        k8s_file = "k8s-dev.yaml"
+      }
+      container('kubectl') {
+        sh "sed -i 's/<IMAGE_TAG>/${imageTag}/' ${k8s_file}"
+        sh "kubectl apply -f ${k8s_file} --record"
+      }
+    }
+  }
+}
